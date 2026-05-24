@@ -1,10 +1,10 @@
 # 🎨 Paint Together
 
-Real-time collaborative drawing application with AI-powered automatic documentation.
+Real-time collaborative drawing application with live cursor tracking and AI-powered automatic documentation.
 
 ## Project Description
 
-Paint Together is a web-based collaborative drawing application that allows multiple users to draw together in real-time. Users can create or join password-protected rooms and see each other's drawings instantly synchronized across all connected clients.
+Paint Together is a web-based collaborative drawing application that allows multiple users to draw together in real-time. Users can create or join password-protected rooms and see each other's drawings instantly synchronized across all connected clients. The application features live cursor tracking, showing where other users are drawing in real-time with their names and tool states.
 
 The project also demonstrates a practical implementation of AI-powered documentation automation using Claude API (via Omniroute), MCP servers, and GitHub Actions.
 
@@ -12,16 +12,18 @@ The project also demonstrates a practical implementation of AI-powered documenta
 
 ### Core Drawing Features
 - **Real-time collaboration**: Draw with multiple users simultaneously
+- **Live cursor tracking**: See other users' cursors in real-time with their names and current tool
 - **Room-based system**: Create or join rooms with name and password protection
 - **Drawing tools**:
   - Color picker
   - Adjustable brush size (1-50px)
-  - Eraser tool
+  - Eraser tool with visual indicator
   - Clear canvas (synchronized for all users)
 - **User management**: See who's online in your room
 - **Responsive design**: Works on desktop and mobile devices with proper canvas scaling
 - **Touch support**: Draw with touch on mobile devices
-- **High-DPI support**: Improved rendering quality on retina and high-resolution displays
+- **High-resolution canvas**: Fixed 1600x900 internal resolution with responsive display scaling
+- **Drawing persistence**: Canvas content is preserved during window resize
 
 ### AI Documentation System
 This project includes an automated documentation system that:
@@ -106,6 +108,8 @@ http://localhost:3000
 4. Click "Join Room"
 5. Start drawing!
 
+You'll see other users' cursors moving in real-time, labeled with their names and showing their current tool (brush color or eraser).
+
 ## Room System
 
 - **Creating a room**: Enter a new room name and set a password
@@ -113,6 +117,7 @@ http://localhost:3000
 - **Room persistence**: Rooms exist as long as at least one user is connected
 - **Auto-cleanup**: Empty rooms are automatically deleted
 - **Password protection**: Rooms are password-protected (stored in memory, not persisted)
+- **State synchronization**: New users receive the complete drawing history and existing cursor positions
 
 ## Drawing Controls
 
@@ -126,14 +131,42 @@ http://localhost:3000
 
 ### Canvas Rendering
 
-The application uses an improved canvas rendering system that provides:
+The application uses a high-resolution canvas rendering system:
 
-- **Coordinate scaling**: Mouse and touch coordinates are properly scaled to match the canvas's internal resolution, ensuring accurate drawing regardless of display size
-- **Responsive sizing**: Canvas automatically adjusts to window size while maintaining aspect ratio (max 1200x700)
-- **CSS sizing**: Explicit CSS dimensions prevent browser scaling artifacts
-- **Drawing preservation**: Canvas content is maintained during window resize events
+- **Fixed internal resolution**: Canvas uses a fixed 1600x900 pixel resolution for consistent drawing quality
+- **Normalized coordinates**: All drawing coordinates are stored as normalized values (0-1 range) for resolution independence
+- **Responsive display**: Canvas display size scales responsively while maintaining 16:9 aspect ratio
+- **Coordinate scaling**: Mouse and touch coordinates are properly scaled between display size and internal resolution
+- **Drawing preservation**: Canvas content is automatically redrawn when window is resized
+- **Smooth rendering**: Uses round line caps and joins for smooth brush strokes
 
-This ensures consistent drawing quality across different screen sizes and pixel densities.
+### Real-time Cursor Tracking
+
+The cursor tracking system provides live collaboration feedback:
+
+- **Position updates**: Cursor positions are broadcast to all room members on mouse/touch movement
+- **Visual indicators**: Each user's cursor shows their name, current color, and tool state
+- **Eraser visualization**: Eraser cursors display a distinct icon instead of a color dot
+- **Smooth transitions**: CSS transitions provide smooth cursor movement
+- **Automatic cleanup**: Cursors are removed when users disconnect
+- **State synchronization**: New users receive existing cursor positions on room join
+
+### Socket.io Events
+
+**Client → Server:**
+- `join-room`: Join or create a room with username, room name, and password
+- `draw`: Send drawing data (normalized coordinates, color, size)
+- `cursor-move`: Send cursor position and tool state (normalized coordinates)
+- `clear-canvas`: Request to clear the canvas for all users
+
+**Server → Client:**
+- `room-joined`: Confirmation with room info, user list, drawing history, and cursor positions
+- `user-joined`: Notification when a user joins the room
+- `user-left`: Notification when a user leaves (includes socketId for cursor cleanup)
+- `draw`: Broadcast drawing data to other users
+- `cursor-move`: Broadcast cursor position and tool state
+- `clear-canvas`: Broadcast canvas clear command
+- `error`: Error messages (wrong password, etc.)
 
 ## Configuration
 
@@ -144,6 +177,12 @@ Default port is 3000. Change it via environment variable:
 ```bash
 PORT=8080 npm start
 ```
+
+### Canvas Configuration
+
+Canvas dimensions are defined in `public/app.js`:
+- Internal resolution: 1600x900 pixels
+- Display size: Responsive, max 1200px width, maintains 16:9 aspect ratio
 
 ### Documentation System Configuration
 
@@ -207,8 +246,8 @@ paint-together/
 │   └── settings.local.json        # Claude settings (WebSearch enabled)
 ├── public/
 │   ├── index.html                 # Main HTML file
-│   ├── style.css                  # Styles
-│   └── app.js                     # Client-side JavaScript
+│   ├── style.css                  # Styles with cursor animations
+│   └── app.js                     # Client-side JavaScript with cursor tracking
 ├── src/                           # Python documentation automation
 │   ├── main.py                    # Entry point for doc generation
 │   ├── mcp_client.py              # MCP server client
@@ -218,7 +257,7 @@ paint-together/
 ├── config/
 │   ├── mcp_config.json            # MCP server configuration
 │   └── prompts.json               # AI prompts for documentation
-├── server.js                      # Node.js server
+├── server.js                      # Node.js server with cursor state management
 ├── package.json                   # Node dependencies
 ├── requirements.txt               # Python dependencies
 ├── .env.example                   # Example environment variables
@@ -250,7 +289,9 @@ To test the collaborative drawing:
 1. Open multiple browser windows/tabs
 2. Join the same room with the same password
 3. Draw in one window and verify it appears in others
-4. Resize the browser window to verify drawing accuracy is maintained
+4. Move your cursor and verify it appears in other windows with your name
+5. Switch between brush and eraser to verify cursor icon changes
+6. Resize the browser window to verify drawing accuracy is maintained
 
 To test documentation generation:
 1. Make code changes and commit
@@ -270,6 +311,11 @@ The canvas coordinate scaling system should handle this automatically. If issues
 - Clear your browser cache
 - Try a hard refresh (Ctrl+Shift+R or Cmd+Shift+R)
 - Check browser console for JavaScript errors
+
+### Cursors Not Appearing
+- Verify Socket.io connection in browser console
+- Check that multiple users are in the same room
+- Ensure cursor-move events are being sent (check Network tab)
 
 ### Python Script Errors
 ```bash

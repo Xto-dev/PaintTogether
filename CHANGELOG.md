@@ -24,6 +24,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+
+## [Unreleased]
+
+### Fixed
+- Canvas now maintains consistent 1600x900 resolution with proper aspect ratio scaling across different screen sizes
+- Canvas content is preserved when window is resized instead of being cleared
+- Drawing coordinates now use normalized values (0-1) to ensure consistency across different canvas display sizes
+
+### Added
+- Real-time cursor tracking showing other users' mouse positions on the canvas
+- Visual indicators for each user's cursor with their username and current tool color
+- Distinct eraser icon display for users in eraser mode
+- Cursor position synchronization when users join existing rooms
+
+### Changed
+- Canvas rendering now uses fixed internal resolution (1600x900) with CSS scaling for display
+- Drawing data is stored and replayed using normalized coordinates for resolution independence
+- Canvas container layout updated to center canvas with proper overflow handling
+
 ## [Unreleased]
 
 ### Fixed
