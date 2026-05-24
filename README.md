@@ -1,10 +1,10 @@
 # 🎨 Paint Together
 
-Real-time collaborative drawing application with live cursor tracking and AI-powered automatic documentation.
+Real-time collaborative drawing application with layers, advanced brush tools, and AI-powered automatic documentation.
 
 ## Project Description
 
-Paint Together is a web-based collaborative drawing application that allows multiple users to draw together in real-time. Users can create or join password-protected rooms and see each other's drawings instantly synchronized across all connected clients. The application features live cursor tracking, showing where other users are drawing in real-time with their names and tool states.
+Paint Together is a web-based collaborative drawing application that allows multiple users to draw together in real-time. Users can create or join password-protected rooms and see each other's drawings instantly synchronized across all connected clients. The application features a professional layer system, multiple brush types, live cursor tracking, and undo/redo functionality.
 
 The project also demonstrates a practical implementation of AI-powered documentation automation using Claude API (via Omniroute), MCP servers, and GitHub Actions.
 
@@ -14,16 +14,36 @@ The project also demonstrates a practical implementation of AI-powered documenta
 - **Real-time collaboration**: Draw with multiple users simultaneously
 - **Live cursor tracking**: See other users' cursors in real-time with their names and current tool
 - **Room-based system**: Create or join rooms with name and password protection
+- **Layer system**:
+  - Multiple independent drawing layers
+  - Layer visibility toggle
+  - Per-layer opacity control (0-100%)
+  - Drag-and-drop layer reordering
+  - Layer renaming (double-click layer name)
+  - Add/delete layers (minimum 1 layer required)
+- **Advanced brush tools**:
+  - Normal brush - standard round brush
+  - Calligraphy brush - pressure-sensitive angled strokes
+  - Marker brush - semi-transparent wide strokes
+  - Adjustable brush size (1-200px)
+  - Opacity control (10-100%)
+  - Smoothing control (0-10) for stabilized strokes
 - **Drawing tools**:
   - Color picker
-  - Adjustable brush size (1-50px)
+  - Eyedropper tool - pick colors from canvas
   - Eraser tool with visual indicator
+  - Custom brush cursor showing size and mode
   - Clear canvas (synchronized for all users)
+- **Undo/Redo**:
+  - Up to 50 undo steps per layer
+  - Keyboard shortcuts: Ctrl+Z (undo), Ctrl+Y or Ctrl+Shift+Z (redo)
+  - Synchronized across all users
 - **User management**: See who's online in your room
 - **Responsive design**: Works on desktop and mobile devices with proper canvas scaling
 - **Touch support**: Draw with touch on mobile devices
 - **High-resolution canvas**: Fixed 1600x900 internal resolution with responsive display scaling
 - **Drawing persistence**: Canvas content is preserved during window resize
+- **Performance optimization**: Draw batching reduces network traffic
 
 ### AI Documentation System
 This project includes an automated documentation system that:
@@ -102,6 +122,8 @@ http://localhost:3000
 
 ## How to Use
 
+### Getting Started
+
 1. Enter your name
 2. Enter a room name (create new or join existing)
 3. Enter a room password
@@ -110,6 +132,33 @@ http://localhost:3000
 
 You'll see other users' cursors moving in real-time, labeled with their names and showing their current tool (brush color or eraser).
 
+### Drawing Controls
+
+- **Draw**: Click and drag on the canvas (or touch on mobile)
+- **Change color**: Use the color picker or eyedropper tool
+- **Adjust brush size**: Use the size slider (1-200px)
+- **Select brush type**: Choose from Normal, Calligraphy, or Marker
+- **Adjust opacity**: Use the opacity slider (10-100%)
+- **Adjust smoothing**: Use the smoothing slider (0-10) for stroke stabilization
+- **Pick color**: Click "Eyedropper" button, then click on canvas to sample color
+- **Erase**: Click "Eraser" button to toggle eraser mode
+- **Clear canvas**: Click "Clear Canvas" to remove all drawings (affects all users)
+- **Undo/Redo**: Use Ctrl+Z to undo, Ctrl+Y or Ctrl+Shift+Z to redo
+
+### Layer Management
+
+The layers panel on the left side provides full layer control:
+
+- **Add layer**: Click "+ Add Layer" button
+- **Select layer**: Click on a layer to make it active (blue highlight)
+- **Rename layer**: Double-click the layer name, type new name, press Enter
+- **Toggle visibility**: Click the eye icon (👁) to show/hide layer
+- **Adjust opacity**: Drag the opacity slider for each layer
+- **Reorder layers**: Drag and drop layers to change drawing order
+- **Delete layer**: Click the × button (requires at least 1 layer)
+
+Layers are drawn from bottom to top, with the topmost layer in the list appearing on top of the canvas.
+
 ## Room System
 
 - **Creating a room**: Enter a new room name and set a password
@@ -117,17 +166,30 @@ You'll see other users' cursors moving in real-time, labeled with their names an
 - **Room persistence**: Rooms exist as long as at least one user is connected
 - **Auto-cleanup**: Empty rooms are automatically deleted
 - **Password protection**: Rooms are password-protected (stored in memory, not persisted)
-- **State synchronization**: New users receive the complete drawing history and existing cursor positions
-
-## Drawing Controls
-
-- **Draw**: Click and drag on the canvas (or touch on mobile)
-- **Change color**: Use the color picker
-- **Adjust brush size**: Use the size slider (1-50px)
-- **Erase**: Click "Eraser" button to toggle eraser mode
-- **Clear canvas**: Click "Clear Canvas" to remove all drawings (affects all users)
+- **State synchronization**: New users receive complete layer data, drawing history, and existing cursor positions
 
 ## Technical Details
+
+### Layer System Architecture
+
+The application uses a sophisticated layer rendering system:
+
+- **Independent layer canvases**: Each layer has its own off-screen canvas for efficient rendering
+- **Composite rendering**: Layers are composited to the main canvas on each frame
+- **Layer properties**: Each layer stores visibility, opacity, name, and drawing data
+- **Synchronized state**: Layer operations (add, delete, reorder, update) are broadcast to all users
+- **Performance optimization**: Only visible layers are rendered, and compositing is scheduled via requestAnimationFrame
+
+### Advanced Brush System
+
+The brush system provides multiple rendering modes:
+
+- **Normal brush**: Standard round brush with configurable size and opacity
+- **Calligraphy brush**: Simulates angled pen strokes with variable width based on stroke direction
+- **Marker brush**: Semi-transparent wide strokes with 30% base opacity for layering effects
+- **Eraser mode**: Uses destination-out compositing to remove pixels from the current layer
+- **Smoothing**: Averages recent cursor positions to stabilize hand-drawn strokes
+- **Custom cursor**: Visual feedback shows brush size and mode (normal or eraser)
 
 ### Canvas Rendering
 
@@ -137,6 +199,7 @@ The application uses a high-resolution canvas rendering system:
 - **Normalized coordinates**: All drawing coordinates are stored as normalized values (0-1 range) for resolution independence
 - **Responsive display**: Canvas display size scales responsively while maintaining 16:9 aspect ratio
 - **Coordinate scaling**: Mouse and touch coordinates are properly scaled between display size and internal resolution
+- **Boundary clamping**: Coordinates are clamped to canvas bounds to prevent drawing outside the canvas
 - **Drawing preservation**: Canvas content is automatically redrawn when window is resized
 - **Smooth rendering**: Uses round line caps and joins for smooth brush strokes
 
@@ -151,21 +214,50 @@ The cursor tracking system provides live collaboration feedback:
 - **Automatic cleanup**: Cursors are removed when users disconnect
 - **State synchronization**: New users receive existing cursor positions on room join
 
+### Performance Optimizations
+
+- **Draw batching**: Drawing operations are batched and sent every 16ms (60fps) to reduce network traffic
+- **Scheduled compositing**: Layer compositing uses requestAnimationFrame to avoid redundant renders
+- **Off-screen rendering**: Each layer renders to its own canvas, avoiding full redraws
+- **Coordinate normalization**: Normalized coordinates reduce data size in network messages
+
+### Undo/Redo System
+
+- **Per-layer history**: Each layer maintains its own undo/redo stack
+- **State snapshots**: Complete drawing data is saved on stroke completion
+- **Stack limits**: Maximum 50 undo steps to prevent memory issues
+- **Synchronized operations**: Undo/redo actions are broadcast to all users
+- **Keyboard shortcuts**: Standard Ctrl+Z (undo) and Ctrl+Y/Ctrl+Shift+Z (redo)
+
 ### Socket.io Events
 
 **Client → Server:**
 - `join-room`: Join or create a room with username, room name, and password
-- `draw`: Send drawing data (normalized coordinates, color, size)
+- `draw`: Send single drawing operation (deprecated, use draw-batch)
+- `draw-batch`: Send batched drawing operations for performance
 - `cursor-move`: Send cursor position and tool state (normalized coordinates)
-- `clear-canvas`: Request to clear the canvas for all users
+- `clear-canvas`: Request to clear all layers for all users
+- `add-layer`: Request to create a new layer
+- `delete-layer`: Request to delete a layer by ID
+- `update-layer`: Update layer properties (name, visibility, opacity)
+- `reorder-layers`: Update layer order
+- `undo`: Broadcast undo operation with updated layer data
+- `redo`: Broadcast redo operation with updated layer data
 
 **Server → Client:**
-- `room-joined`: Confirmation with room info, user list, drawing history, and cursor positions
+- `room-joined`: Confirmation with room info, user list, layer data, and cursor positions
 - `user-joined`: Notification when a user joins the room
 - `user-left`: Notification when a user leaves (includes socketId for cursor cleanup)
-- `draw`: Broadcast drawing data to other users
+- `draw`: Broadcast single drawing operation to other users
+- `draw-batch`: Broadcast batched drawing operations to other users
 - `cursor-move`: Broadcast cursor position and tool state
 - `clear-canvas`: Broadcast canvas clear command
+- `layer-added`: Broadcast new layer creation
+- `layer-deleted`: Broadcast layer deletion
+- `layer-updated`: Broadcast layer property changes
+- `layers-reordered`: Broadcast layer order changes
+- `undo`: Broadcast undo operation
+- `redo`: Broadcast redo operation
 - `error`: Error messages (wrong password, etc.)
 
 ## Configuration
@@ -183,6 +275,14 @@ PORT=8080 npm start
 Canvas dimensions are defined in `public/app.js`:
 - Internal resolution: 1600x900 pixels
 - Display size: Responsive, max 1200px width, maintains 16:9 aspect ratio
+
+### Brush Configuration
+
+Brush parameters in `public/app.js`:
+- Size range: 1-200 pixels
+- Opacity range: 10-100%
+- Smoothing range: 0-10 points
+- Undo stack limit: 50 steps
 
 ### Documentation System Configuration
 
@@ -245,9 +345,9 @@ paint-together/
 ├── .claude/
 │   └── settings.local.json        # Claude settings (WebSearch enabled)
 ├── public/
-│   ├── index.html                 # Main HTML file
-│   ├── style.css                  # Styles with cursor animations
-│   └── app.js                     # Client-side JavaScript with cursor tracking
+│   ├── index.html                 # Main HTML with layer panel
+│   ├── style.css                  # Styles with layer UI and brush cursor
+│   └── app.js                     # Client with layers, brushes, undo/redo
 ├── src/                           # Python documentation automation
 │   ├── main.py                    # Entry point for doc generation
 │   ├── mcp_client.py              # MCP server client
@@ -257,7 +357,7 @@ paint-together/
 ├── config/
 │   ├── mcp_config.json            # MCP server configuration
 │   └── prompts.json               # AI prompts for documentation
-├── server.js                      # Node.js server with cursor state management
+├── server.js                      # Node.js server with layer management
 ├── package.json                   # Node dependencies
 ├── requirements.txt               # Python dependencies
 ├── .env.example                   # Example environment variables
@@ -289,9 +389,13 @@ To test the collaborative drawing:
 1. Open multiple browser windows/tabs
 2. Join the same room with the same password
 3. Draw in one window and verify it appears in others
-4. Move your cursor and verify it appears in other windows with your name
-5. Switch between brush and eraser to verify cursor icon changes
-6. Resize the browser window to verify drawing accuracy is maintained
+4. Test layer operations (add, delete, reorder, visibility, opacity)
+5. Test different brush types and settings
+6. Test undo/redo with Ctrl+Z and Ctrl+Y
+7. Test eyedropper tool by picking colors from the canvas
+8. Move your cursor and verify it appears in other windows with your name
+9. Switch between brush and eraser to verify cursor icon changes
+10. Resize the browser window to verify drawing accuracy is maintained
 
 To test documentation generation:
 1. Make code changes and commit
@@ -312,10 +416,26 @@ The canvas coordinate scaling system should handle this automatically. If issues
 - Try a hard refresh (Ctrl+Shift+R or Cmd+Shift+R)
 - Check browser console for JavaScript errors
 
+### Layers Not Syncing
+- Verify Socket.io connection in browser console
+- Check that all users are in the same room
+- Ensure layer events are being sent (check Network tab)
+- Try refreshing the page to resync with server state
+
 ### Cursors Not Appearing
 - Verify Socket.io connection in browser console
 - Check that multiple users are in the same room
 - Ensure cursor-move events are being sent (check Network tab)
+
+### Undo/Redo Not Working
+- Verify you have made at least one stroke before attempting undo
+- Check that keyboard shortcuts are not being intercepted by browser
+- Ensure you are on the correct layer (undo is per-layer)
+
+### Brush Cursor Not Visible
+- Move mouse over the canvas area
+- Check that canvas is not in eyedropper mode
+- Verify CSS is loaded correctly
 
 ### Python Script Errors
 ```bash
@@ -339,6 +459,13 @@ MIT
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
+Areas for contribution:
+- Automated tests for drawing and layer operations
+- Additional brush types and effects
+- Export/import functionality for drawings
+- User authentication and persistent rooms
+- Mobile UI improvements
+
 ## Contact
 
 For questions or issues, please create an issue in the repository.
@@ -347,3 +474,6 @@ For questions or issues, please create an issue in the repository.
 
 **Last updated**: 2026-05-24  
 *This README is automatically updated by AI on every commit.*
+```
+
+Updated the README to comprehensively document the new layer system, advanced brush tools, undo/redo functionality, eyedropper tool, and performance optimizations. The structure maintains clarity while adding detailed explanations of the new features and their usage.

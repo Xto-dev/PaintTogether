@@ -25,6 +25,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+
+## [Unreleased]
+
+### Added
+- Layer system with support for multiple drawing layers
+- Layer management panel with add, delete, rename, reorder, and visibility toggle
+- Layer opacity control with individual sliders per layer
+- Brush type selection: Normal, Calligraphy, and Marker
+- Brush opacity control (10-100%)
+- Brush smoothing control (0-10 levels)
+- Eyedropper tool for color picking from canvas
+- Custom brush cursor that follows mouse and reflects brush size
+- Undo/redo functionality with keyboard shortcuts (Ctrl+Z / Ctrl+Y)
+- Batch drawing optimization for improved network performance
+- Drawing continuation when cursor leaves canvas boundaries
+- Touch device support improvements
+
+### Changed
+- Canvas rendering now uses layer compositing system
+- Drawing data structure now includes layer ID, brush type, opacity, and eraser flag
+- Brush size range increased from 1-50 to 1-200
+- Eraser now uses destination-out compositing instead of white color
+- Cursor behavior: canvas now uses custom cursor instead of default crosshair
+- Drawing state management refactored to support layer-based operations
+- Server-side data structure migrated from single `drawingData` array to layer-based system
+
+### Fixed
+- Drawing coordinates now clamped to canvas boundaries to prevent out-of-bounds rendering
+- Touch event handling improved with proper coordinate clamping
+
 ## [Unreleased]
 
 ### Fixed
