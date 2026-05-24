@@ -27,15 +27,24 @@ function resizeCanvas() {
   const maxWidth = window.innerWidth - 40;
   const maxHeight = window.innerHeight - 200;
 
-  canvas.width = Math.min(1200, maxWidth);
-  canvas.height = Math.min(700, maxHeight);
+  const displayWidth = Math.min(1200, maxWidth);
+  const displayHeight = Math.min(700, maxHeight);
+
+  canvas.width = displayWidth;
+  canvas.height = displayHeight;
+
+  canvas.style.width = displayWidth + 'px';
+  canvas.style.height = displayHeight + 'px';
 
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 }
 
 resizeCanvas();
-window.addEventListener('resize', resizeCanvas);
+window.addEventListener('resize', () => {
+  const drawingData = [];
+  resizeCanvas();
+});
 
 loginForm.addEventListener('submit', (e) => {
   e.preventDefault();
@@ -57,7 +66,7 @@ socket.on('room-joined', ({ roomName, username, users, drawingData }) => {
   userName.textContent = `You: ${username}`;
   usersElement.textContent = users.join(', ');
 
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  resizeCanvas();
   drawingData.forEach(data => {
     drawLine(data.x0, data.y0, data.x1, data.y1, data.color, data.size);
   });
@@ -91,16 +100,16 @@ let lastY = 0;
 canvas.addEventListener('mousedown', (e) => {
   isDrawing = true;
   const rect = canvas.getBoundingClientRect();
-  lastX = e.clientX - rect.left;
-  lastY = e.clientY - rect.top;
+  lastX = (e.clientX - rect.left) * (canvas.width / rect.width);
+  lastY = (e.clientY - rect.top) * (canvas.height / rect.height);
 });
 
 canvas.addEventListener('mousemove', (e) => {
   if (!isDrawing) return;
 
   const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
+  const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+  const y = (e.clientY - rect.top) * (canvas.height / rect.height);
 
   const color = isEraser ? '#FFFFFF' : currentColor;
 
@@ -132,8 +141,8 @@ canvas.addEventListener('touchstart', (e) => {
   isDrawing = true;
   const rect = canvas.getBoundingClientRect();
   const touch = e.touches[0];
-  lastX = touch.clientX - rect.left;
-  lastY = touch.clientY - rect.top;
+  lastX = (touch.clientX - rect.left) * (canvas.width / rect.width);
+  lastY = (touch.clientY - rect.top) * (canvas.height / rect.height);
 });
 
 canvas.addEventListener('touchmove', (e) => {
@@ -142,8 +151,8 @@ canvas.addEventListener('touchmove', (e) => {
 
   const rect = canvas.getBoundingClientRect();
   const touch = e.touches[0];
-  const x = touch.clientX - rect.left;
-  const y = touch.clientY - rect.top;
+  const x = (touch.clientX - rect.left) * (canvas.width / rect.width);
+  const y = (touch.clientY - rect.top) * (canvas.height / rect.height);
 
   const color = isEraser ? '#FFFFFF' : currentColor;
 
