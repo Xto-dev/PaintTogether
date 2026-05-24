@@ -28,7 +28,7 @@ class AIAnalyzer:
         )
 
         response = self.client.chat.completions.create(
-            model="claude-sonnet-4",
+            model="kr/claude-sonnet-4.5",
             max_tokens=4096,
             messages=[
                 {"role": "system", "content": prompt_config['system']},
@@ -51,7 +51,7 @@ class AIAnalyzer:
         )
 
         response = self.client.chat.completions.create(
-            model="claude-sonnet-4",
+            model="kr/claude-sonnet-4.5",
             max_tokens=2048,
             messages=[
                 {"role": "system", "content": prompt_config['system']},
@@ -68,7 +68,7 @@ class AIAnalyzer:
         user_prompt = prompt_config['user_template'].format(code=code)
 
         response = self.client.chat.completions.create(
-            model="claude-sonnet-4",
+            model="kr/claude-sonnet-4.5",
             max_tokens=2048,
             messages=[
                 {"role": "system", "content": prompt_config['system']},

@@ -8,6 +8,8 @@ def get_commit_diff(commit_hash: str = 'HEAD') -> str:
             ['git', 'show', commit_hash, '--format=', '--unified=3'],
             capture_output=True,
             text=True,
+            encoding='utf-8',
+            errors='replace',
             check=True
         )
         return result.stdout
@@ -22,6 +24,8 @@ def get_commit_info(commit_hash: str = 'HEAD') -> Dict[str, str]:
             ['git', 'show', '-s', f'--format={format_str}', commit_hash],
             capture_output=True,
             text=True,
+            encoding='utf-8',
+            errors='replace',
             check=True
         )
 
@@ -45,6 +49,8 @@ def get_current_branch() -> str:
             ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
             capture_output=True,
             text=True,
+            encoding='utf-8',
+            errors='replace',
             check=True
         )
         return result.stdout.strip()
@@ -58,6 +64,8 @@ def get_repo_root() -> str:
             ['git', 'rev-parse', '--show-toplevel'],
             capture_output=True,
             text=True,
+            encoding='utf-8',
+            errors='replace',
             check=True
         )
         return result.stdout.strip()
