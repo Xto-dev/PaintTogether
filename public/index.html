@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paint Together</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="login-screen" class="screen">
+    <div class="login-container">
+      <h1>🎨 Paint Together</h1>
+      <p>Draw with friends in real-time</p>
+      <form id="login-form">
+        <input type="text" id="username" placeholder="Your name" required>
+        <input type="text" id="room-name" placeholder="Room name" required>
+        <input type="password" id="room-password" placeholder="Room password" required>
+        <button type="submit">Join Room</button>
+      </form>
+      <div id="error-message" class="error"></div>
+    </div>
+  </div>
+
+  <div id="canvas-screen" class="screen hidden">
+    <div class="header">
+      <div class="room-info">
+        <h2 id="room-title"></h2>
+        <span id="user-name"></span>
+      </div>
+      <div class="users-list">
+        <span>👥 Online:</span>
+        <span id="users"></span>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <label>
+        Color:
+        <input type="color" id="color-picker" value="#000000">
+      </label>
+      <label>
+        Size:
+        <input type="range" id="brush-size" min="1" max="50" value="5">
+        <span id="brush-size-value">5</span>
+      </label>
+      <button id="eraser-btn">Eraser</button>
+      <button id="clear-btn">Clear Canvas</button>
+    </div>
+
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

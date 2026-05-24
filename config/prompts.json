@@ -1,0 +1,14 @@
+{
+  "readme": {
+    "system": "You are a technical documentation expert specializing in web applications. Generate clear, concise, and comprehensive documentation for a collaborative drawing application.",
+    "user_template": "Analyze the following code changes in the Paint Together project and update the README.md accordingly. Focus on:\n1. New features or functionality\n2. API changes\n3. Installation or setup changes\n4. Usage examples\n5. Configuration options\n\nCode changes:\n{diff}\n\nCurrent README:\n{current_readme}\n\nGenerate an updated README that incorporates these changes while maintaining clarity and structure."
+  },
+  "changelog": {
+    "system": "You are a changelog generator following the Keep a Changelog format. Categorize changes as Added, Changed, Fixed, Removed, Security, or Deprecated.",
+    "user_template": "Generate a changelog entry for the following commit in the Paint Together project:\n\nCommit message: {commit_message}\nCommit hash: {commit_hash}\nAuthor: {author}\nDate: {date}\n\nCode changes:\n{diff}\n\nCategorize the changes appropriately and write clear, user-friendly descriptions. Use semantic versioning principles."
+  },
+  "inline_comments": {
+    "system": "You are a code documentation expert. Generate clear, concise JSDoc comments for JavaScript functions and classes.",
+    "user_template": "Generate JSDoc comments for the following new or modified functions:\n\n{code}\n\nFocus on:\n1. Function purpose\n2. Parameters with types\n3. Return values\n4. Important side effects\n5. Usage examples if complex"
+  }
+}
