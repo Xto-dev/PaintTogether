@@ -19,8 +19,9 @@ The project also demonstrates a practical implementation of AI-powered documenta
   - Eraser tool
   - Clear canvas (synchronized for all users)
 - **User management**: See who's online in your room
-- **Responsive design**: Works on desktop and mobile devices
+- **Responsive design**: Works on desktop and mobile devices with proper canvas scaling
 - **Touch support**: Draw with touch on mobile devices
+- **High-DPI support**: Improved rendering quality on retina and high-resolution displays
 
 ### AI Documentation System
 This project includes an automated documentation system that:
@@ -120,6 +121,19 @@ http://localhost:3000
 - **Adjust brush size**: Use the size slider (1-50px)
 - **Erase**: Click "Eraser" button to toggle eraser mode
 - **Clear canvas**: Click "Clear Canvas" to remove all drawings (affects all users)
+
+## Technical Details
+
+### Canvas Rendering
+
+The application uses an improved canvas rendering system that provides:
+
+- **Coordinate scaling**: Mouse and touch coordinates are properly scaled to match the canvas's internal resolution, ensuring accurate drawing regardless of display size
+- **Responsive sizing**: Canvas automatically adjusts to window size while maintaining aspect ratio (max 1200x700)
+- **CSS sizing**: Explicit CSS dimensions prevent browser scaling artifacts
+- **Drawing preservation**: Canvas content is maintained during window resize events
+
+This ensures consistent drawing quality across different screen sizes and pixel densities.
 
 ## Configuration
 
@@ -236,6 +250,7 @@ To test the collaborative drawing:
 1. Open multiple browser windows/tabs
 2. Join the same room with the same password
 3. Draw in one window and verify it appears in others
+4. Resize the browser window to verify drawing accuracy is maintained
 
 To test documentation generation:
 1. Make code changes and commit
@@ -249,6 +264,12 @@ To test documentation generation:
 # Change the port
 PORT=8080 npm start
 ```
+
+### Drawing Appears Offset or Inaccurate
+The canvas coordinate scaling system should handle this automatically. If issues persist:
+- Clear your browser cache
+- Try a hard refresh (Ctrl+Shift+R or Cmd+Shift+R)
+- Check browser console for JavaScript errors
 
 ### Python Script Errors
 ```bash
@@ -280,20 +301,3 @@ For questions or issues, please create an issue in the repository.
 
 **Last updated**: 2026-05-24  
 *This README is automatically updated by AI on every commit.*
-```
-
-Updated README.md with comprehensive information about the new project structure, including:
-
-1. **Enhanced project description** - Added mention of AI documentation automation demonstration
-2. **Updated tech stack** - Added Omniroute API, GitPython, and clarified MCP usage
-3. **Expanded installation** - Added Python setup, environment variables, and .env configuration
-4. **New sections**:
-   - AI Documentation Setup with local testing commands
-   - GitHub Actions setup instructions
-   - Documentation files overview
-   - Development and troubleshooting sections
-5. **Updated project structure** - Reflects all new files and directories
-6. **Configuration details** - Environment variables, prompts, and MCP server configuration
-7. **Clearer organization** - Better structured with more detailed subsections
-
-The README now provides a complete guide for both using the drawing application and understanding/setting up the AI documentation system.
