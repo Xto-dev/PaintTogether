@@ -6,6 +6,8 @@ Real-time collaborative drawing application with AI-powered automatic documentat
 
 Paint Together is a web-based collaborative drawing application that allows multiple users to draw together in real-time. Users can create or join password-protected rooms and see each other's drawings instantly synchronized across all connected clients.
 
+The project also demonstrates a practical implementation of AI-powered documentation automation using Claude API (via Omniroute), MCP servers, and GitHub Actions.
+
 ## Features
 
 ### Core Drawing Features
@@ -25,7 +27,8 @@ This project includes an automated documentation system that:
 - Automatically updates README.md when code changes
 - Generates CHANGELOG.md with semantic versioning
 - Analyzes git diffs and creates human-readable documentation
-- Runs via GitHub Actions on every push
+- Runs via GitHub Actions on every push to main/develop branches
+- Uses Omniroute API (OpenAI-compatible endpoint) for Claude access
 
 ## Tech Stack
 
@@ -37,14 +40,16 @@ This project includes an automated documentation system that:
 ### Documentation System
 - **Python 3.10+** - documentation automation scripts
 - **GitHub Actions** - CI/CD for auto-documentation
-- **Claude API** - AI-powered code analysis
+- **Omniroute API** - Claude API access via OpenAI-compatible endpoint
 - **MCP Servers** - GitHub and filesystem integration
+- **GitPython** - Git operations in Python
 
 ## Installation
 
 ### Prerequisites
 - Node.js 14+
 - npm or yarn
+- Python 3.10+ (for documentation automation)
 - Git
 
 ### Setup
@@ -55,12 +60,29 @@ git clone https://github.com/yourusername/paint-together.git
 cd paint-together
 ```
 
-2. Install dependencies:
+2. Install Node.js dependencies:
 ```bash
 npm install
 ```
 
-3. Start the server:
+3. Install Python dependencies (for documentation automation):
+```bash
+pip install -r requirements.txt
+```
+
+4. Configure environment variables:
+```bash
+cp .env.example .env
+# Edit .env and add your API keys
+```
+
+Required environment variables:
+- `OMNIROUTE_API_KEY` - Your Omniroute API key
+- `OMNIROUTE_BASE_URL` - Omniroute endpoint (default: http://localhost:20128/v1)
+- `GITHUB_TOKEN` - GitHub token for MCP server (optional for local use)
+- `PORT` - Server port (default: 3000)
+
+5. Start the server:
 ```bash
 npm start
 ```
@@ -70,7 +92,7 @@ For development with auto-reload:
 npm run dev
 ```
 
-4. Open your browser:
+6. Open your browser:
 ```
 http://localhost:3000
 ```
@@ -89,16 +111,19 @@ http://localhost:3000
 - **Joining a room**: Enter an existing room name with the correct password
 - **Room persistence**: Rooms exist as long as at least one user is connected
 - **Auto-cleanup**: Empty rooms are automatically deleted
+- **Password protection**: Rooms are password-protected (stored in memory, not persisted)
 
 ## Drawing Controls
 
 - **Draw**: Click and drag on the canvas (or touch on mobile)
 - **Change color**: Use the color picker
-- **Adjust brush size**: Use the size slider
+- **Adjust brush size**: Use the size slider (1-50px)
 - **Erase**: Click "Eraser" button to toggle eraser mode
 - **Clear canvas**: Click "Clear Canvas" to remove all drawings (affects all users)
 
 ## Configuration
+
+### Server Configuration
 
 Default port is 3000. Change it via environment variable:
 
@@ -106,17 +131,54 @@ Default port is 3000. Change it via environment variable:
 PORT=8080 npm start
 ```
 
+### Documentation System Configuration
+
+The documentation system can be configured through:
+
+1. **Prompts** (`config/prompts.json`): Customize AI prompts for README, CHANGELOG, and inline comments
+2. **MCP Servers** (`config/mcp_config.json`): Configure MCP server connections
+3. **Environment variables** (`.env`): API keys and endpoints
+
 ## AI Documentation Setup
 
-To enable automatic documentation:
+### Local Testing
 
-1. Set up GitHub Secrets:
-   - `CLAUDE_API_KEY` - your Claude API key
-   - `GITHUB_TOKEN` - automatically available in Actions
+Test documentation generation locally:
 
-2. The GitHub Action will run on every push to main/develop
+```bash
+# Analyze the latest commit
+python src/main.py --commit HEAD
 
-3. Documentation will be automatically updated and committed back
+# Analyze a specific commit
+python src/main.py --commit abc123
+
+# Analyze a range of commits
+python src/main.py --range HEAD~5..HEAD
+
+# Generate only README
+python src/main.py --only-readme
+
+# Generate only CHANGELOG
+python src/main.py --only-changelog
+```
+
+### GitHub Actions Setup
+
+To enable automatic documentation on every push:
+
+1. Go to your repository Settings → Secrets and variables → Actions
+
+2. Add the following secrets:
+   - `OMNIROUTE_API_KEY` - Your Omniroute API key
+   - `OMNIROUTE_BASE_URL` - Omniroute endpoint URL
+   - `GITHUB_TOKEN` - Automatically provided by GitHub Actions
+
+3. The workflow (`.github/workflows/auto-docs.yml`) will:
+   - Trigger on push to main/develop branches
+   - Fetch git diff via MCP GitHub server
+   - Send diff to Omniroute API for analysis
+   - Generate updated README.md and CHANGELOG.md
+   - Commit changes back to the repository
 
 See `AI-Documentation-Bot-Project.md` for detailed documentation system architecture.
 
@@ -127,24 +189,80 @@ paint-together/
 ├── .github/
 │   └── workflows/
 │       └── auto-docs.yml          # GitHub Action for auto-documentation
+├── .claude/
+│   └── settings.local.json        # Claude settings (WebSearch enabled)
 ├── public/
 │   ├── index.html                 # Main HTML file
 │   ├── style.css                  # Styles
 │   └── app.js                     # Client-side JavaScript
-├── src/
-│   ├── main.py                    # Documentation automation script
+├── src/                           # Python documentation automation
+│   ├── main.py                    # Entry point for doc generation
 │   ├── mcp_client.py              # MCP server client
-│   ├── ai_analyzer.py             # Claude API integration
-│   └── doc_generator.py           # Documentation generator
+│   ├── ai_analyzer.py             # Omniroute/Claude API integration
+│   ├── doc_generator.py           # Documentation generator
+│   └── git_utils.py               # Git utilities
 ├── config/
 │   ├── mcp_config.json            # MCP server configuration
-│   └── prompts.json               # AI prompts
+│   └── prompts.json               # AI prompts for documentation
 ├── server.js                      # Node.js server
 ├── package.json                   # Node dependencies
 ├── requirements.txt               # Python dependencies
+├── .env.example                   # Example environment variables
+├── .gitignore                     # Git ignore rules
 ├── README.md                      # This file (auto-updated)
-└── CHANGELOG.md                   # Auto-generated changelog
+├── CHANGELOG.md                   # Auto-generated changelog
+├── CLAUDE.md                      # Claude Code guidance
+├── QUICKSTART.md                  # Quick start guide
+└── AI-Documentation-Bot-Project.md # Documentation system architecture
 ```
+
+## Documentation Files
+
+- **README.md** - Main project documentation (auto-updated)
+- **CHANGELOG.md** - Version history (auto-generated)
+- **CLAUDE.md** - Guidance for Claude Code when working with this repository
+- **QUICKSTART.md** - Quick start guide for developers
+- **AI-Documentation-Bot-Project.md** - Detailed documentation system architecture
+
+## Development
+
+### Running Tests
+
+Currently, the project does not include automated tests. Contributions for test coverage are welcome.
+
+### Manual Testing
+
+To test the collaborative drawing:
+1. Open multiple browser windows/tabs
+2. Join the same room with the same password
+3. Draw in one window and verify it appears in others
+
+To test documentation generation:
+1. Make code changes and commit
+2. Run `python src/main.py --commit HEAD`
+3. Verify README.md and CHANGELOG.md are updated
+
+## Troubleshooting
+
+### Port Already in Use
+```bash
+# Change the port
+PORT=8080 npm start
+```
+
+### Python Script Errors
+```bash
+# Verify dependencies are installed
+pip install -r requirements.txt
+
+# Check environment variables
+cat .env
+```
+
+### GitHub Action Not Running
+- Verify secrets are configured in repository settings
+- Check that push is to main or develop branch
+- Review logs in Actions tab
 
 ## License
 
@@ -154,6 +272,28 @@ MIT
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
+## Contact
+
+For questions or issues, please create an issue in the repository.
+
 ---
 
-**Last updated**: 2026-05-24
+**Last updated**: 2026-05-24  
+*This README is automatically updated by AI on every commit.*
+```
+
+Updated README.md with comprehensive information about the new project structure, including:
+
+1. **Enhanced project description** - Added mention of AI documentation automation demonstration
+2. **Updated tech stack** - Added Omniroute API, GitPython, and clarified MCP usage
+3. **Expanded installation** - Added Python setup, environment variables, and .env configuration
+4. **New sections**:
+   - AI Documentation Setup with local testing commands
+   - GitHub Actions setup instructions
+   - Documentation files overview
+   - Development and troubleshooting sections
+5. **Updated project structure** - Reflects all new files and directories
+6. **Configuration details** - Environment variables, prompts, and MCP server configuration
+7. **Clearer organization** - Better structured with more detailed subsections
+
+The README now provides a complete guide for both using the drawing application and understanding/setting up the AI documentation system.
