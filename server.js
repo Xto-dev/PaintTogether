@@ -14,6 +14,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 const rooms = new Map();
 const userCursors = new Map();
 
+function generateId() {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
 io.on('connection', (socket) => {
   console.log('New client connected:', socket.id);
 
@@ -31,10 +35,17 @@ io.on('connection', (socket) => {
       }
       room.users.set(socket.id, username);
     } else {
+      const defaultLayer = {
+        id: generateId(),
+        name: 'Layer 1',
+        visible: true,
+        opacity: 1.0,
+        drawingData: []
+      };
       rooms.set(roomName, {
         password,
         users: new Map([[socket.id, username]]),
-        drawingData: []
+        layers: [defaultLayer]
       });
     }
 
@@ -60,7 +71,7 @@ io.on('connection', (socket) => {
       roomName,
       username,
       users: Array.from(room.users.values()),
-      drawingData: room.drawingData,
+      layers: room.layers,
       cursors: existingCursors
     });
 
@@ -77,8 +88,26 @@ io.on('connection', (socket) => {
 
     const room = rooms.get(socket.roomName);
     if (room) {
-      room.drawingData.push(data);
-      socket.to(socket.roomName).emit('draw', data);
+      const layer = room.layers.find(l => l.id === data.layerId);
+      if (layer) {
+        layer.drawingData.push(data);
+        socket.to(socket.roomName).emit('draw', data);
+      }
+    }
+  });
+
+  socket.on('draw-batch', (batch) => {
+    if (!socket.roomName) return;
+
+    const room = rooms.get(socket.roomName);
+    if (room) {
+      batch.forEach(data => {
+        const layer = room.layers.find(l => l.id === data.layerId);
+        if (layer) {
+          layer.drawingData.push(data);
+        }
+      });
+      socket.to(socket.roomName).emit('draw-batch', batch);
     }
   });
 
@@ -87,8 +116,67 @@ io.on('connection', (socket) => {
 
     const room = rooms.get(socket.roomName);
     if (room) {
-      room.drawingData = [];
+      room.layers.forEach(layer => {
+        layer.drawingData = [];
+      });
       io.to(socket.roomName).emit('clear-canvas');
+    }
+  });
+
+  socket.on('add-layer', () => {
+    if (!socket.roomName) return;
+
+    const room = rooms.get(socket.roomName);
+    if (room) {
+      const newLayer = {
+        id: generateId(),
+        name: `Layer ${room.layers.length + 1}`,
+        visible: true,
+        opacity: 1.0,
+        drawingData: []
+      };
+      room.layers.push(newLayer);
+      io.to(socket.roomName).emit('layer-added', newLayer);
+    }
+  });
+
+  socket.on('delete-layer', ({ layerId }) => {
+    if (!socket.roomName) return;
+
+    const room = rooms.get(socket.roomName);
+    if (room && room.layers.length > 1) {
+      room.layers = room.layers.filter(l => l.id !== layerId);
+      io.to(socket.roomName).emit('layer-deleted', { layerId });
+    }
+  });
+
+  socket.on('update-layer', ({ layerId, updates }) => {
+    if (!socket.roomName) return;
+
+    const room = rooms.get(socket.roomName);
+    if (room) {
+      const layer = room.layers.find(l => l.id === layerId);
+      if (layer) {
+        Object.assign(layer, updates);
+        io.to(socket.roomName).emit('layer-updated', { layerId, updates });
+      }
+    }
+  });
+
+  socket.on('reorder-layers', ({ layers: layerIds }) => {
+    if (!socket.roomName) return;
+
+    const room = rooms.get(socket.roomName);
+    if (room) {
+      const reorderedLayers = [];
+      layerIds.forEach(id => {
+        const layer = room.layers.find(l => l.id === id);
+        if (layer) {
+          reorderedLayers.push(layer);
+        }
+      });
+      room.layers = reorderedLayers;
+      socket.to(socket.roomName).emit('layers-reordered', { layers: layerIds });
     }
   });
 
@@ -102,6 +190,32 @@ io.on('connection', (socket) => {
       username: socket.username,
       ...data
     });
+  });
+
+  socket.on('undo', ({ layerId, drawingData }) => {
+    if (!socket.roomName) return;
+
+    const room = rooms.get(socket.roomName);
+    if (room) {
+      const layer = room.layers.find(l => l.id === layerId);
+      if (layer) {
+        layer.drawingData = drawingData;
+        socket.to(socket.roomName).emit('undo', { layerId, drawingData });
+      }
+    }
+  });
+
+  socket.on('redo', ({ layerId, drawingData }) => {
+    if (!socket.roomName) return;
+
+    const room = rooms.get(socket.roomName);
+    if (room) {
+      const layer = room.layers.find(l => l.id === layerId);
+      if (layer) {
+        layer.drawingData = drawingData;
+        socket.to(socket.roomName).emit('redo', { layerId, drawingData });
+      }
+    }
   });
 
   socket.on('disconnect', () => {

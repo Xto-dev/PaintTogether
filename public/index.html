@@ -40,15 +40,44 @@
       </label>
       <label>
         Size:
-        <input type="range" id="brush-size" min="1" max="50" value="5">
+        <input type="range" id="brush-size" min="1" max="200" value="5">
         <span id="brush-size-value">5</span>
       </label>
+      <label>
+        Brush:
+        <select id="brush-type">
+          <option value="normal">Normal</option>
+          <option value="calligraphy">Calligraphy</option>
+          <option value="marker">Marker</option>
+        </select>
+      </label>
+      <label>
+        Opacity:
+        <input type="range" id="brush-opacity" min="10" max="100" value="100">
+        <span id="brush-opacity-value">100%</span>
+      </label>
+      <label>
+        Smoothing:
+        <input type="range" id="brush-smoothing" min="0" max="10" value="0">
+        <span id="brush-smoothing-value">0</span>
+      </label>
+      <button id="eyedropper-btn">Eyedropper</button>
       <button id="eraser-btn">Eraser</button>
       <button id="clear-btn">Clear Canvas</button>
     </div>
 
-    <div class="canvas-container">
-      <canvas id="canvas"></canvas>
+    <div class="main-content">
+      <div class="layers-panel">
+        <div class="layers-header">
+          <h3>Layers</h3>
+          <button id="add-layer-btn">+ Add Layer</button>
+        </div>
+        <div id="layers-list"></div>
+      </div>
+
+      <div class="canvas-container">
+        <canvas id="canvas"></canvas>
+      </div>
     </div>
   </div>
 
