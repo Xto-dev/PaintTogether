@@ -186,14 +186,80 @@ button[type="submit"]:hover,
   background: #e74c3c;
 }
 
-#canvas {
+.canvas-container {
   flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow: hidden;
+}
+
+#canvas {
   background: white;
   cursor: crosshair;
   display: block;
-  margin: 20px auto;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
   border-radius: 10px;
-  max-width: calc(100% - 40px);
-  max-height: calc(100vh - 200px);
+}
+
+.remote-cursor {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  transition: left 0.05s linear, top 0.05s linear;
+}
+
+.cursor-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  border: 2px solid white;
+}
+
+.cursor-name {
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.cursor-icon.eraser-icon {
+  position: relative;
+}
+
+.cursor-icon.eraser-icon::before {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 8px;
+  background: white;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-45deg);
+  border-radius: 2px 2px 0 0;
+}
+
+.cursor-icon.eraser-icon::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 3px;
+  background: #c0392b;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-45deg);
+  border-radius: 1px;
 }

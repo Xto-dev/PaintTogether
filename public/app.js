@@ -22,29 +22,54 @@ let currentColor = '#000000';
 let currentSize = 5;
 let isEraser = false;
 
+const cursors = new Map();
+let currentDrawingData = [];
+
 function resizeCanvas() {
   const container = canvas.parentElement;
   const maxWidth = window.innerWidth - 40;
   const maxHeight = window.innerHeight - 200;
 
-  const displayWidth = Math.min(1200, maxWidth);
-  const displayHeight = Math.min(700, maxHeight);
+  const CANVAS_WIDTH = 1600;
+  const CANVAS_HEIGHT = 900;
+  const aspectRatio = CANVAS_WIDTH / CANVAS_HEIGHT;
 
-  canvas.width = displayWidth;
-  canvas.height = displayHeight;
+  let displayWidth = Math.min(1200, maxWidth);
+  let displayHeight = displayWidth / aspectRatio;
+
+  if (displayHeight > maxHeight) {
+    displayHeight = maxHeight;
+    displayWidth = displayHeight * aspectRatio;
+  }
+
+  canvas.width = CANVAS_WIDTH;
+  canvas.height = CANVAS_HEIGHT;
 
   canvas.style.width = displayWidth + 'px';
   canvas.style.height = displayHeight + 'px';
 
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
+
+  redrawCanvas();
 }
 
 resizeCanvas();
-window.addEventListener('resize', () => {
-  const drawingData = [];
-  resizeCanvas();
-});
+window.addEventListener('resize', resizeCanvas);
+
+function redrawCanvas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  currentDrawingData.forEach(data => {
+    drawLine(
+      data.x0 * canvas.width,
+      data.y0 * canvas.height,
+      data.x1 * canvas.width,
+      data.y1 * canvas.height,
+      data.color,
+      data.size
+    );
+  });
+}
 
 loginForm.addEventListener('submit', (e) => {
   e.preventDefault();
@@ -58,7 +83,7 @@ loginForm.addEventListener('submit', (e) => {
   }
 });
 
-socket.on('room-joined', ({ roomName, username, users, drawingData }) => {
+socket.on('room-joined', ({ roomName, username, users, drawingData, cursors }) => {
   loginScreen.classList.add('hidden');
   canvasScreen.classList.remove('hidden');
 
@@ -66,9 +91,11 @@ socket.on('room-joined', ({ roomName, username, users, drawingData }) => {
   userName.textContent = `You: ${username}`;
   usersElement.textContent = users.join(', ');
 
+  currentDrawingData = drawingData;
   resizeCanvas();
-  drawingData.forEach(data => {
-    drawLine(data.x0, data.y0, data.x1, data.y1, data.color, data.size);
+
+  cursors.forEach(cursor => {
+    updateCursor(cursor.socketId, cursor.username, cursor.x, cursor.y, cursor.color, cursor.isEraser);
   });
 });
 
@@ -77,9 +104,15 @@ socket.on('user-joined', ({ username, users }) => {
   console.log(`${username} joined the room`);
 });
 
-socket.on('user-left', ({ username, users }) => {
+socket.on('user-left', ({ username, socketId, users }) => {
   usersElement.textContent = users.join(', ');
   console.log(`${username} left the room`);
+
+  const cursorElement = document.getElementById(`cursor-${socketId}`);
+  if (cursorElement) {
+    cursorElement.remove();
+  }
+  cursors.delete(socketId);
 });
 
 socket.on('error', ({ message }) => {
@@ -87,11 +120,24 @@ socket.on('error', ({ message }) => {
 });
 
 socket.on('draw', (data) => {
-  drawLine(data.x0, data.y0, data.x1, data.y1, data.color, data.size);
+  currentDrawingData.push(data);
+  drawLine(
+    data.x0 * canvas.width,
+    data.y0 * canvas.height,
+    data.x1 * canvas.width,
+    data.y1 * canvas.height,
+    data.color,
+    data.size
+  );
 });
 
 socket.on('clear-canvas', () => {
+  currentDrawingData = [];
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+});
+
+socket.on('cursor-move', ({ socketId, username, x, y, color, isEraser }) => {
+  updateCursor(socketId, username, x, y, color, isEraser);
 });
 
 let lastX = 0;
@@ -105,24 +151,35 @@ canvas.addEventListener('mousedown', (e) => {
 });
 
 canvas.addEventListener('mousemove', (e) => {
-  if (!isDrawing) return;
-
   const rect = canvas.getBoundingClientRect();
   const x = (e.clientX - rect.left) * (canvas.width / rect.width);
   const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+  socket.emit('cursor-move', {
+    x: x / canvas.width,
+    y: y / canvas.height,
+    color: currentColor,
+    isEraser: isEraser
+  });
+
+  if (!isDrawing) return;
 
   const color = isEraser ? '#FFFFFF' : currentColor;
 
   drawLine(lastX, lastY, x, y, color, currentSize);
 
-  socket.emit('draw', {
-    x0: lastX,
-    y0: lastY,
-    x1: x,
-    y1: y,
+  const drawData = {
+    x0: lastX / canvas.width,
+    y0: lastY / canvas.height,
+    x1: x / canvas.width,
+    y1: y / canvas.height,
     color: color,
     size: currentSize
-  });
+  };
+
+  currentDrawingData.push(drawData);
+
+  socket.emit('draw', drawData);
 
   lastX = x;
   lastY = y;
@@ -147,25 +204,37 @@ canvas.addEventListener('touchstart', (e) => {
 
 canvas.addEventListener('touchmove', (e) => {
   e.preventDefault();
-  if (!isDrawing) return;
 
   const rect = canvas.getBoundingClientRect();
   const touch = e.touches[0];
   const x = (touch.clientX - rect.left) * (canvas.width / rect.width);
   const y = (touch.clientY - rect.top) * (canvas.height / rect.height);
 
+  socket.emit('cursor-move', {
+    x: x / canvas.width,
+    y: y / canvas.height,
+    color: currentColor,
+    isEraser: isEraser
+  });
+
+  if (!isDrawing) return;
+
   const color = isEraser ? '#FFFFFF' : currentColor;
 
   drawLine(lastX, lastY, x, y, color, currentSize);
 
-  socket.emit('draw', {
-    x0: lastX,
-    y0: lastY,
-    x1: x,
-    y1: y,
+  const drawData = {
+    x0: lastX / canvas.width,
+    y0: lastY / canvas.height,
+    x1: x / canvas.width,
+    y1: y / canvas.height,
     color: color,
     size: currentSize
-  });
+  };
+
+  currentDrawingData.push(drawData);
+
+  socket.emit('draw', drawData);
 
   lastX = x;
   lastY = y;
@@ -206,3 +275,49 @@ clearBtn.addEventListener('click', () => {
     socket.emit('clear-canvas');
   }
 });
+
+function updateCursor(socketId, username, normalizedX, normalizedY, color, isEraser) {
+  let cursorElement = document.getElementById(`cursor-${socketId}`);
+
+  if (!cursorElement) {
+    cursorElement = document.createElement('div');
+    cursorElement.id = `cursor-${socketId}`;
+    cursorElement.className = 'remote-cursor';
+
+    const cursorIcon = document.createElement('div');
+    cursorIcon.className = 'cursor-icon';
+
+    const cursorName = document.createElement('div');
+    cursorName.className = 'cursor-name';
+    cursorName.textContent = username;
+
+    cursorElement.appendChild(cursorIcon);
+    cursorElement.appendChild(cursorName);
+    document.body.appendChild(cursorElement);
+
+    cursors.set(socketId, cursorElement);
+  }
+
+  const rect = canvas.getBoundingClientRect();
+  const x = normalizedX * rect.width;
+  const y = normalizedY * rect.height;
+
+  cursorElement.style.left = (rect.left + x) + 'px';
+  cursorElement.style.top = (rect.top + y) + 'px';
+
+  const cursorIcon = cursorElement.querySelector('.cursor-icon');
+  const cursorName = cursorElement.querySelector('.cursor-name');
+
+  if (isEraser) {
+    cursorIcon.innerHTML = '';
+    cursorIcon.classList.add('eraser-icon');
+    cursorIcon.style.backgroundColor = '#e74c3c';
+  } else {
+    cursorIcon.innerHTML = '●';
+    cursorIcon.classList.remove('eraser-icon');
+    cursorIcon.style.backgroundColor = color;
+    cursorIcon.style.color = color;
+  }
+
+  cursorName.style.backgroundColor = isEraser ? '#e74c3c' : color;
+}

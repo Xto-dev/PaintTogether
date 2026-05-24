@@ -12,6 +12,7 @@ const PORT = process.env.PORT || 3000;
 app.use(express.static(path.join(__dirname, 'public')));
 
 const rooms = new Map();
+const userCursors = new Map();
 
 io.on('connection', (socket) => {
   console.log('New client connected:', socket.id);
@@ -42,11 +43,25 @@ io.on('connection', (socket) => {
     socket.username = username;
 
     const room = rooms.get(roomName);
+
+    const existingCursors = [];
+    room.users.forEach((user, sid) => {
+      if (sid !== socket.id && userCursors.has(sid)) {
+        const cursorData = userCursors.get(sid);
+        existingCursors.push({
+          socketId: sid,
+          username: user,
+          ...cursorData
+        });
+      }
+    });
+
     socket.emit('room-joined', {
       roomName,
       username,
       users: Array.from(room.users.values()),
-      drawingData: room.drawingData
+      drawingData: room.drawingData,
+      cursors: existingCursors
     });
 
     socket.to(roomName).emit('user-joined', {
@@ -77,7 +92,21 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('cursor-move', (data) => {
+    if (!socket.roomName) return;
+
+    userCursors.set(socket.id, data);
+
+    socket.to(socket.roomName).emit('cursor-move', {
+      socketId: socket.id,
+      username: socket.username,
+      ...data
+    });
+  });
+
   socket.on('disconnect', () => {
+    userCursors.delete(socket.id);
+
     if (socket.roomName) {
       const room = rooms.get(socket.roomName);
       if (room) {
@@ -89,6 +118,7 @@ io.on('connection', (socket) => {
         } else {
           socket.to(socket.roomName).emit('user-left', {
             username: socket.username,
+            socketId: socket.id,
             users: Array.from(room.users.values())
           });
         }
